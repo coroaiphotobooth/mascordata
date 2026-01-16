@@ -1,6 +1,8 @@
+
 /**
- * BACKEND RESILIEN UNTUK CORO AI PHOTOBOOTH - V2.5
+ * BACKEND UNTUK CORO AI PHOTOBOOTH - FULL VERSION
  */
+
 const SCRIPT_PROP = PropertiesService.getScriptProperties();
 
 function getSpreadsheet() {
@@ -8,11 +10,7 @@ function getSpreadsheet() {
   if (!ss) {
     const ssId = SCRIPT_PROP.getProperty('SPREADSHEET_ID');
     if (ssId) {
-      try {
-        ss = SpreadsheetApp.openById(ssId);
-      } catch (e) {
-        console.error("Gagal membuka SS ID: " + ssId);
-      }
+      ss = SpreadsheetApp.openById(ssId);
     }
   }
   return ss;
@@ -25,47 +23,64 @@ function setup() {
     SCRIPT_PROP.setProperty('SPREADSHEET_ID', ss.getId());
   }
 
-  let sheet = ss.getSheetByName('Gallery');
-  if (!sheet) {
-    sheet = ss.insertSheet('Gallery');
-    sheet.appendRow(['id', 'createdAt', 'conceptName', 'imageUrl', 'downloadUrl', 'token']);
-  }
-  
-  if (!SCRIPT_PROP.getProperty('FOLDER_ID')) {
-    SCRIPT_PROP.setProperty('FOLDER_ID', DriveApp.getRootFolder().getId());
+  // Setup Gallery Sheet
+  let gallerySheet = ss.getSheetByName('Gallery');
+  if (!gallerySheet) {
+    gallerySheet = ss.insertSheet('Gallery');
+    gallerySheet.appendRow(['id', 'createdAt', 'conceptName', 'imageUrl', 'downloadUrl', 'token', 'eventId']);
+    gallerySheet.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#f3f3f3");
   }
   
   if (!SCRIPT_PROP.getProperty('ADMIN_PIN')) {
     SCRIPT_PROP.setProperty('ADMIN_PIN', '1234');
   }
-
-  return "Setup Sukses. URL Spreadsheet: " + ss.getUrl();
+  
+  return "Setup Berhasil. SS URL: " + ss.getUrl();
 }
 
 function doGet(e) {
   const action = e.parameter.action;
   const ss = getSpreadsheet();
-  if (!ss) return createJsonResponse({ ok: false, error: 'SS_NOT_FOUND' });
-  
-  const sheet = ss.getSheetByName('Gallery');
-  if (!sheet) return createJsonResponse({ items: [] });
+  if (!ss) return createJsonResponse({ ok: false, error: 'Spreadsheet not found.' });
+
+  if (action === 'getSettings') {
+    // Ambil konsep dari Cloud atau gunakan default jika kosong
+    const storedConcepts = SCRIPT_PROP.getProperty('CONCEPTS_JSON');
+    
+    return createJsonResponse({
+      ok: true,
+      settings: {
+        eventName: SCRIPT_PROP.getProperty('EVENT_NAME') || 'CORO AI PHOTOBOOTH',
+        eventDescription: SCRIPT_PROP.getProperty('EVENT_DESC') || 'Transform Your Reality',
+        folderId: SCRIPT_PROP.getProperty('FOLDER_ID') || '',
+        overlayImage: SCRIPT_PROP.getProperty('OVERLAY_IMAGE') || null,
+        backgroundImage: SCRIPT_PROP.getProperty('BACKGROUND_IMAGE') || null,
+        adminPin: SCRIPT_PROP.getProperty('ADMIN_PIN') || '1234',
+        autoResetTime: parseInt(SCRIPT_PROP.getProperty('AUTO_RESET')) || 60,
+        orientation: SCRIPT_PROP.getProperty('ORIENTATION') || 'portrait'
+      },
+      concepts: storedConcepts ? JSON.parse(storedConcepts) : null
+    });
+  }
 
   if (action === 'gallery') {
-    const data = sheet.getDataRange().getValues();
-    if (data.length <= 1) return createJsonResponse({ items: [] });
-
-    const headers = data[0];
-    const rows = data.slice(1);
+    const sheet = ss.getSheetByName('Gallery');
+    const values = sheet.getDataRange().getValues();
+    if (values.length <= 1) return createJsonResponse({ items: [] });
     
-    const items = rows.filter(r => r[0]).map(row => {
-      let item = {};
-      headers.forEach((h, i) => item[h] = row[i]);
-      return item;
-    });
-
+    const headers = values[0];
+    const items = values.slice(1)
+      .filter(row => row[0] && row[0].toString().trim() !== "") 
+      .map(row => {
+        let obj = {};
+        headers.forEach((h, i) => { obj[h] = row[i]; });
+        return obj;
+      });
+      
     return createJsonResponse({ items: items.reverse() });
   }
-  return ContentService.createTextOutput("Service Active").setMimeType(ContentService.MimeType.TEXT);
+  
+  return createJsonResponse({ ok: true, message: "API Active" });
 }
 
 function doPost(e) {
@@ -73,95 +88,88 @@ function doPost(e) {
   try {
     data = JSON.parse(e.postData.contents);
   } catch (err) {
-    return createJsonResponse({ ok: false, error: 'JSON_PARSE_ERROR' });
+    return createJsonResponse({ ok: false, error: 'Invalid JSON' });
   }
   
+  const action = data.action;
   const ss = getSpreadsheet();
-  if (!ss) return createJsonResponse({ ok: false, error: 'DATABASE_LOST' });
-  let sheet = ss.getSheetByName('Gallery');
-  if (!sheet) {
-    setup();
-    sheet = ss.getSheetByName('Gallery');
-  }
+  const gallerySheet = ss.getSheetByName('Gallery');
 
-  const storedPin = SCRIPT_PROP.getProperty('ADMIN_PIN') || "1234";
-  const isAuthenticated = String(data.pin) === String(storedPin);
-
-  // Aksi tanpa butuh PIN (Upload dari proses booth)
-  if (data.action === 'uploadGenerated') {
+  if (action === 'uploadGenerated') {
+    const folderId = data.folderId || SCRIPT_PROP.getProperty('FOLDER_ID');
+    let folder;
     try {
-      const folderId = SCRIPT_PROP.getProperty('FOLDER_ID');
-      const folder = DriveApp.getFolderById(folderId);
-      const blob = Utilities.newBlob(Utilities.base64Decode(data.image.split(',')[1]), 'image/png', `PHOTO_${Date.now()}.png`);
-      const file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      
-      const fileId = file.getId();
-      const directUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
-      const timestamp = new Date().toLocaleString('id-ID');
-      const token = Utilities.getUuid();
-
-      sheet.appendRow([fileId, timestamp, data.conceptName, directUrl, directUrl, token]);
-      SpreadsheetApp.flush();
-
-      return createJsonResponse({
-        ok: true,
-        id: fileId,
-        viewUrl: `https://drive.google.com/file/d/${fileId}/view`,
-        imageUrl: directUrl,
-        downloadUrl: directUrl
-      });
-    } catch (err) {
-      return createJsonResponse({ ok: false, error: err.toString() });
-    }
-  }
-
-  // Proteksi PIN untuk aksi admin
-  if (!isAuthenticated) {
-    return createJsonResponse({ ok: false, error: 'UNAUTHORIZED_ACCESS' });
-  }
-
-  if (data.action === 'deletePhoto') {
-    const fileId = data.id;
-    const values = sheet.getDataRange().getValues();
-    let rowToDelete = -1;
-    
-    for (let i = 1; i < values.length; i++) {
-      if (values[i][0] == fileId) {
-        rowToDelete = i + 1;
-        break;
-      }
+      folder = DriveApp.getFolderById(folderId);
+    } catch (e) {
+      folder = DriveApp.getRootFolder();
     }
     
-    if (rowToDelete !== -1) {
-      sheet.deleteRow(rowToDelete);
-      try {
-        DriveApp.getFileById(fileId).setTrashed(true);
-      } catch (e) {
-        console.error("Drive delete failed: " + e.toString());
-      }
-      SpreadsheetApp.flush();
-      return createJsonResponse({ ok: true });
-    }
-    return createJsonResponse({ ok: false, error: 'FILE_NOT_FOUND_IN_DB' });
+    const timestamp = new Date().toISOString();
+    const blob = Utilities.newBlob(Utilities.base64Decode(data.image.split(',')[1]), 'image/png', `PHOTO_${new Date().getTime()}.png`);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    const token = Utilities.getUuid();
+    const thumbnailUrl = `https://drive.google.com/thumbnail?id=${file.getId()}&sz=w1000`;
+    const viewUrl = `https://drive.google.com/file/d/${file.getId()}/view`;
+    
+    gallerySheet.appendRow([file.getId(), timestamp, data.conceptName, thumbnailUrl, viewUrl, token, data.eventId || ""]);
+    
+    return createJsonResponse({
+      ok: true,
+      id: file.getId(),
+      imageUrl: thumbnailUrl,
+      viewUrl: viewUrl,
+      downloadUrl: thumbnailUrl
+    });
   }
 
-  if (data.action === 'resetApp') {
-    const lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
-      sheet.deleteRows(2, lastRow - 1);
-    }
-    SpreadsheetApp.flush();
-    return createJsonResponse({ ok: true, message: 'Database cleared' });
-  }
+  const adminPin = SCRIPT_PROP.getProperty('ADMIN_PIN') || "1234";
+  if (data.pin !== adminPin) return createJsonResponse({ ok: false, error: 'PIN INVALID' });
 
-  if (data.action === 'updateSettings') {
-    if (data.settings.folderId) SCRIPT_PROP.setProperty('FOLDER_ID', data.settings.folderId);
-    if (data.settings.adminPin) SCRIPT_PROP.setProperty('ADMIN_PIN', data.settings.adminPin);
+  if (action === 'updateSettings') {
+    const s = data.settings;
+    SCRIPT_PROP.setProperty('EVENT_NAME', s.eventName);
+    SCRIPT_PROP.setProperty('EVENT_DESC', s.eventDescription);
+    SCRIPT_PROP.setProperty('FOLDER_ID', s.folderId);
+    SCRIPT_PROP.setProperty('OVERLAY_IMAGE', s.overlayImage || '');
+    SCRIPT_PROP.setProperty('BACKGROUND_IMAGE', s.backgroundImage || '');
+    SCRIPT_PROP.setProperty('AUTO_RESET', s.autoResetTime.toString());
+    SCRIPT_PROP.setProperty('ORIENTATION', s.orientation);
+    SCRIPT_PROP.setProperty('ADMIN_PIN', s.adminPin);
     return createJsonResponse({ ok: true });
   }
 
-  return createJsonResponse({ ok: false, error: 'UNKNOWN_ACTION' });
+  if (action === 'updateConcepts') {
+    SCRIPT_PROP.setProperty('CONCEPTS_JSON', JSON.stringify(data.concepts));
+    return createJsonResponse({ ok: true });
+  }
+
+  if (action === 'uploadOverlay') {
+    const blob = Utilities.newBlob(Utilities.base64Decode(data.image.split(',')[1]), 'image/png', 'overlay.png');
+    const folderId = SCRIPT_PROP.getProperty('FOLDER_ID');
+    let folder;
+    try { folder = DriveApp.getFolderById(folderId); } catch(e) { folder = DriveApp.getRootFolder(); }
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const url = `https://lh3.googleusercontent.com/d/${file.getId()}`;
+    SCRIPT_PROP.setProperty('OVERLAY_IMAGE', url);
+    return createJsonResponse({ ok: true, url: url });
+  }
+
+  if (action === 'uploadBackground') {
+    const blob = Utilities.newBlob(Utilities.base64Decode(data.image.split(',')[1]), 'image/jpeg', 'background.jpg');
+    const folderId = SCRIPT_PROP.getProperty('FOLDER_ID');
+    let folder;
+    try { folder = DriveApp.getFolderById(folderId); } catch(e) { folder = DriveApp.getRootFolder(); }
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const url = `https://lh3.googleusercontent.com/d/${file.getId()}`;
+    SCRIPT_PROP.setProperty('BACKGROUND_IMAGE', url);
+    return createJsonResponse({ ok: true, url: url });
+  }
+
+  return createJsonResponse({ ok: false, error: 'Action unknown' });
 }
 
 function createJsonResponse(obj) {
