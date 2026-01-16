@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { PhotoboothSettings } from '../types';
 
@@ -10,46 +11,54 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, settings }) => {
   return (
-    <div className="flex flex-col items-center justify-center w-full min-h-screen relative p-6 text-center">
-      {/* Tombol Admin Tersembunyi/Kecil */}
+    <div className="flex flex-col items-center justify-center w-full min-h-screen relative p-6 md:p-10 text-center">
+      {/* Background Layer */}
+      {settings.backgroundImage && (
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={settings.backgroundImage} 
+            className="w-full h-full object-cover" 
+            alt="Menu Background" 
+          />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+        </div>
+      )}
+
       <button 
         onClick={onAdmin} 
-        className="absolute top-6 right-6 text-gray-800 hover:text-purple-500 transition-colors uppercase text-[10px] tracking-widest z-50"
+        className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest z-50"
       >
-        System
+        Admin
       </button>
 
-      <div className="mb-16 animate-in fade-in zoom-in duration-1000">
-        <div className="inline-block px-3 py-1 border border-purple-500/30 bg-purple-500/10 text-purple-400 text-[10px] tracking-[0.3em] uppercase mb-4 rounded-full">
-          Neural Frame V2.5
-        </div>
-        <h1 className="text-5xl md:text-8xl font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-4">
+      <div className="relative z-10 mb-12 md:mb-16 animate-pulse px-4">
+        <h1 className="text-4xl md:text-7xl font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-4 uppercase">
           {settings.eventName}
         </h1>
-        <h2 className="text-sm md:text-xl tracking-[0.5em] text-gray-400 font-light uppercase">
+        <h2 className="text-sm md:text-xl tracking-[0.3em] md:tracking-[0.5em] text-purple-400 font-bold uppercase">
           {settings.eventDescription}
         </h2>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 w-full max-w-md md:max-w-none justify-center">
+      <div className="relative z-10 flex flex-col md:flex-row gap-4 md:gap-8 w-full max-w-md md:max-w-none justify-center">
         <button 
           onClick={onStart}
-          className="group relative px-12 py-6 bg-purple-600 hover:bg-purple-500 transition-all rounded-none font-heading text-xl tracking-widest neon-border overflow-hidden"
+          className="group relative px-8 md:px-12 py-5 md:py-6 bg-purple-600 hover:bg-purple-500 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden"
         >
-          <span className="relative z-10">START CAPTURE</span>
-          <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
+          <span className="relative z-10 italic">LAUNCH</span>
+          <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
         </button>
 
         <button 
           onClick={onGallery}
-          className="group relative px-12 py-6 border border-white/20 hover:border-white transition-all rounded-none font-heading text-xl tracking-widest overflow-hidden"
+          className="group relative px-8 md:px-12 py-5 md:py-6 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest overflow-hidden"
         >
-          <span className="relative z-10">ARCHIVE</span>
+          <span className="relative z-10 italic">GALLERY</span>
         </button>
       </div>
 
-      <div className="mt-20 opacity-30 text-[10px] tracking-[0.8em] uppercase text-gray-500">
-        AI GENERATIVE • CORO.AI • 2025
+      <div className="relative z-10 mt-16 md:absolute md:bottom-10 text-[8px] md:text-xs text-gray-500 tracking-[0.4em] uppercase opacity-50 px-4 font-mono">
+        AI POWERED - COROAI.APP // 2025 GENERATIVE_SYSTEM
       </div>
     </div>
   );
