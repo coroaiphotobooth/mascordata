@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +16,6 @@
       color: #ffffff;
       margin: 0;
       padding: 0;
-      overflow-x: hidden;
     }
     .font-heading { font-family: 'Orbitron', sans-serif; }
     .neon-border {
@@ -38,21 +38,30 @@
       z-index: 10;
     }
     @keyframes scan {
-      0% { top: 0; opacity: 0; }
-      50% { opacity: 1; }
-      100% { top: 100%; opacity: 0; }
+      0% { top: 0; }
+      100% { top: 100%; }
     }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #050505; }
-    ::-webkit-scrollbar-thumb { background: #bc13fe44; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #bc13fe; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #050505;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #bc13fe44;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #bc13fe;
+    }
   </style>
 <script type="importmap">
 {
   "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
@@ -62,6 +71,7 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- Pemanggilan script utama untuk proses build -->
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
