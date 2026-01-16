@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState, Concept, PhotoboothSettings, GalleryItem } from './types';
+import { AppState, Concept, PhotoboothSettings } from './types';
 import { DEFAULT_CONCEPTS, DEFAULT_SETTINGS } from './constants';
 import LandingPage from './pages/LandingPage';
 import ThemesPage from './pages/ThemesPage';
@@ -48,15 +48,15 @@ const App: React.FC = () => {
       case AppState.LANDING:
         return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={() => setCurrentPage(AppState.ADMIN)} settings={settings} />;
       case AppState.THEMES:
-        return <ThemesPage concepts={concepts} onSelect={(c) => { setSelectedConcept(c); setCurrentPage(AppState.CAMERA); }} onBack={() => setCurrentPage(AppState.LANDING)} />;
+        return <ThemesPage concepts={concepts} onSelect={(c: Concept) => { setSelectedConcept(c); setCurrentPage(AppState.CAMERA); }} onBack={() => setCurrentPage(AppState.LANDING)} />;
       case AppState.CAMERA:
-        return <CameraPage onCapture={(img) => setCapturedImage(img)} onBack={() => setCurrentPage(AppState.THEMES)} onGenerate={() => setCurrentPage(AppState.GENERATING)} capturedImage={capturedImage} orientation={settings.orientation} />;
+        return <CameraPage onCapture={(img: string) => setCapturedImage(img)} onBack={() => setCurrentPage(AppState.THEMES)} onGenerate={() => setCurrentPage(AppState.GENERATING)} capturedImage={capturedImage} orientation={settings.orientation} />;
       case AppState.GENERATING:
         return <ResultPage capturedImage={capturedImage!} concept={selectedConcept!} settings={settings} onDone={handleReset} onGallery={() => setCurrentPage(AppState.GALLERY)} />;
       case AppState.GALLERY:
         return <GalleryPage onBack={() => setCurrentPage(AppState.LANDING)} />;
       case AppState.ADMIN:
-        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={(s) => { setSettings(s); localStorage.setItem('pb_settings', JSON.stringify(s)); }} onSaveConcepts={(c) => { setConcepts(c); localStorage.setItem('pb_concepts', JSON.stringify(c)); }} onBack={() => setCurrentPage(AppState.LANDING)} />;
+        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={(s: PhotoboothSettings) => { setSettings(s); localStorage.setItem('pb_settings', JSON.stringify(s)); }} onSaveConcepts={(c: Concept[]) => { setConcepts(c); localStorage.setItem('pb_concepts', JSON.stringify(c)); }} onBack={() => setCurrentPage(AppState.LANDING)} />;
       default:
         return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={() => setCurrentPage(AppState.ADMIN)} settings={settings} />;
     }
