@@ -1,6 +1,7 @@
+
 import { Concept, PhotoboothSettings } from './types';
 
-export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxScEAhOBWvkHYiWNl1ZJHsayZ52768tF7XqXwu8d5ZqlckfzVQxUYU9cieUuVRsZrxUA/exec';
+export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycby3SIzV13FGsbxMPYHv2JHPr9b_JFvF19xDpbiTfyKw9Y9TBzpYMR0fkPMRTWc3m7x4/exec';
 
 export const DEFAULT_CONCEPTS: Concept[] = [
   {
@@ -37,15 +38,16 @@ export const DEFAULT_CONCEPTS: Concept[] = [
     id: 'vintage',
     name: 'Retro 80s',
     prompt: 'Transform this person into a 1980s synthwave style icon with big hair, neon sunglasses, and a grid sun background. Maintain facial identity.',
-    thumbnail: 'https://picsum.photos/seed/blood/300/500'
+    thumbnail: 'https://picsum.photos/seed/retro/300/500'
   }
 ];
 
 export const DEFAULT_SETTINGS: PhotoboothSettings = {
-  eventName: 'CORO AI PHOTOBOOTH',
+  eventName: 'COROAI PHOTOBOOTH',
   eventDescription: 'Transform Your Reality into Digital Art',
   folderId: '1knqeFCrMVhUlfzmuu-AVTkZmFF3Dnuqy',
   overlayImage: null,
+  backgroundImage: null,
   autoResetTime: 60,
   adminPin: '1234',
   orientation: 'portrait'
